@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard Admin - Frutas</title>
+    <style>
+      body {
+        background-color: #000;
+        color: #fff;
+        font-family: Arial, sans-serif;
+        padding: 20px;
+      }
+
+      h1 {
+        text-align: center;
+        margin-bottom: 30px;
+      }
+
+      .fruta-card {
+        background: #111;
+        padding: 15px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        display: flex;
+        gap: 15px;
+        align-items: center;
+      }
+
+      .fruta-card img {
+        width: 80px;
+        height: 80px;
+        object-fit: cover;
+        border-radius: 8px;
+      }
+
+      .fruta-info {
+        flex-grow: 1;
+      }
+
+      .fruta-info strong {
+        display: block;
+      }
+
+      .actions button {
+        background-color: #7c3aed;
+        border: none;
+        border-radius: 6px;
+        color: white;
+        padding: 6px 12px;
+        margin-left: 10px;
+        cursor: pointer;
+      }
+
+      .actions button.delete {
+        background-color: #e11d48;
+      }
+
+      form {
+        margin-top: 30px;
+        background-color: #111;
+        padding: 20px;
+        border-radius: 12px;
+      }
+
+      form input,
+      form textarea {
+        width: 100%;
+        padding: 10px;
+        margin-top: 10px;
+        margin-bottom: 20px;
+        border: none;
+        border-radius: 8px;
+        background-color: #222;
+        color: white;
+      }
+
+      form button {
+        background-color: #22c55e;
+        padding: 10px;
+        border: none;
+        border-radius: 8px;
+        font-weight: bold;
+        cursor: pointer;
+        width: 100%;
+      }
+
+      #listaFrutas {
+        max-height: 500px; /* ou qualquer altura que funcione bem pra você */
+        overflow-y: auto;
+        padding-right: 10px; /* espaço pra barra de rolagem não atrapalhar */
+        margin-top: 30px;
+        border: 1px solid #333;
+        border-radius: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Painel de Administração de Frutas</h1>
+
+    <form id="formNovaFruta">
+      <h2>Adicionar Nova Fruta</h2>
+      <input type="text" id="nome" placeholder="Nome" required />
+      <input type="number" id="codigo" placeholder="Código" required />
+
+      <label for="imagemUpload">Escolha uma imagem:</label>
+      <input type="file" id="imagemUpload" accept="image/*" required />
+
+      <textarea id="sobre" placeholder="Sobre a fruta" required></textarea>
+      <button type="submit">Adicionar Fruta</button>
+    </form>
+
+    <div id="listaFrutas"></div>
+
+    <script>
+      const binId = "67f2172f8960c979a57f1cbf";
+      const masterKey =
+        "$2a$10$qWJ.6NokTFFRL/IaIiPDIuIXijBh53tAL4tHoI4nk3iO1RFwcjS9.";
+      const url = `https://api.jsonbin.io/v3/b/${binId}`;
+      const headers = {
+        "Content-Type": "application/json",
+        "X-Master-Key": masterKey,
+      };
+      const imgbbKey = "da3f1269af437b575d90e70e4d6043d0";
+
+      let frutas = [];
+
+      async function carregarFrutas() {
+        const res = await fetch(url, { headers });
+        const data = await res.json();
+        frutas = data.record.frutas;
+        exibirFrutas();
+      }
+
+      function exibirFrutas() {
+        const lista = document.getElementById("listaFrutas");
+        lista.innerHTML = "";
+        frutas.forEach((fruta, index) => {
+          const card = document.createElement("div");
+          card.className = "fruta-card";
+          card.innerHTML = `
+          <img src="${fruta.imagem}" alt="${fruta.nome}">
+          <div class="fruta-info">
+            <strong>${fruta.nome}</strong>
+            <small>Código: ${fruta.codigo}</small><br/>
+            <small>${fruta.sobre}</small>
+          </div>
+          <div class="actions">
+            <button onclick="editarFruta(${index})">Editar</button>
+            <button onclick="removerFruta(${index})" class="delete">Excluir</button>
+          </div>
+        `;
+          lista.appendChild(card);
+        });
+      }
+
+      async function atualizarBanco() {
+        await fetch(url, {
+          method: "PUT",
+          headers,
+          body: JSON.stringify({ frutas }),
+        });
+        carregarFrutas();
+      }
+
+      document
+        .getElementById("formNovaFruta")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const fileInput = document.getElementById("imagemUpload");
+          const file = fileInput.files[0];
+
+          if (!file) {
+            alert("Por favor, selecione uma imagem.");
+            return;
+          }
+
+          const formData = new FormData();
+          formData.append("image", file);
+
+          const res = await fetch(
+            `https://api.imgbb.com/1/upload?key=${imgbbKey}`,
+            {
+              method: "POST",
+              body: formData,
+            }
+          );
+
+          const data = await res.json();
+          const imageUrl = data.data.url;
+
+          const novaFruta = {
+            nome: document.getElementById("nome").value,
+            codigo: parseInt(document.getElementById("codigo").value),
+            imagem: imageUrl,
+            sobre: document.getElementById("sobre").value,
+          };
+
+          frutas.push(novaFruta);
+          await atualizarBanco();
+          e.target.reset();
+        });
+
+      async function removerFruta(index) {
+        if (confirm("Deseja mesmo excluir esta fruta?")) {
+          frutas.splice(index, 1);
+          await atualizarBanco();
+        }
+      }
+
+      function editarFruta(index) {
+        const fruta = frutas[index];
+        const card = document.getElementById("listaFrutas").children[index];
+
+        card.innerHTML = `
+    <img src="${fruta.imagem}" alt="${fruta.nome}">
+    <div class="fruta-info">
+      <input type="text" id="edit-nome-${index}" value="${fruta.nome}">
+      <input type="number" id="edit-codigo-${index}" value="${fruta.codigo}">
+      <textarea id="edit-sobre-${index}">${fruta.sobre}</textarea>
+    </div>
+    <div class="actions">
+      <button onclick="salvarEdicao(${index})">Salvar</button>
+      <button onclick="carregarFrutas()">Cancelar</button>
+    </div>
+    `;
+      }
+
+      async function salvarEdicao(index) {
+        frutas[index].nome = document.getElementById(
+          `edit-nome-${index}`
+        ).value;
+        frutas[index].codigo = parseInt(
+          document.getElementById(`edit-codigo-${index}`).value
+        );
+        frutas[index].sobre = document.getElementById(
+          `edit-sobre-${index}`
+        ).value;
+
+        await atualizarBanco();
+      }
+
+      carregarFrutas();
+    </script>
+  </body>
+</html>

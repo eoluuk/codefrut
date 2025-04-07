@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Consulta de Frutas</title>
+  <style>
+    body {
+      background-color: #000;
+      color: #fff;
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+      padding: 20px;
+    }
+
+    .card {
+      background-color: #111;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 0 10px #000;
+      width: 300px;
+      margin-bottom: 20px;
+      display: none;
+    }
+
+    .card img {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+    }
+
+    .card-content {
+      padding: 16px;
+    }
+
+    .card-content h2 {
+      margin: 10px 0;
+    }
+
+    .codigo {
+      background-color: #222;
+      border-radius: 8px;
+      padding: 5px 10px;
+      margin: 10px 0;
+      font-size: 18px;
+      font-weight: bold;
+      color: #aaa;
+      text-align: center;
+    }
+
+    .sobre-box {
+      background-color: #222;
+      border-radius: 8px;
+      padding: 10px;
+      margin-top: 10px;
+    }
+
+    .sobre-box strong {
+      display: block;
+      margin-bottom: 5px;
+      color: #fff;
+    }
+
+    input, button {
+      width: 300px;
+      padding: 12px;
+      font-size: 16px;
+      border: none;
+      border-radius: 8px;
+      margin-bottom: 10px;
+    }
+
+    input {
+      background-color: #222;
+      color: #fff;
+    }
+
+    button {
+      background-color: #7c3aed;
+      color: #fff;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    button:hover {
+      background-color: #9f67ff;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="card" id="frutaCard">
+    <img id="frutaImagem" src="" alt="Imagem da fruta">
+    <div class="card-content">
+      <h2 id="frutaNome"></h2>
+      <div class="codigo">COD: <span id="frutaCodigo"></span></div>
+      <div class="sobre-box">
+        <strong>Sobre:</strong>
+        <p id="frutaSobre"></p>
+      </div>
+    </div>
+  </div>
+
+  <input type="number" id="codigoInput" placeholder="Digite o código da fruta" />
+  <button onclick="consultarFruta()">CONSULTAR</button>
+
+  <script>
+    const binId = '67f2172f8960c979a57f1cbf';
+    const masterKey = '$2a$10$qWJ.6NokTFFRL/IaIiPDIuIXijBh53tAL4tHoI4nk3iO1RFwcjS9.';
+    const url = `https://api.jsonbin.io/v3/b/${binId}`;
+    const headers = {
+      'Content-Type': 'application/json',
+      'X-Master-Key': masterKey
+    };
+
+    async function consultarFruta() {
+      const codigo = parseInt(document.getElementById("codigoInput").value);
+      const card = document.getElementById("frutaCard");
+
+      try {
+        const response = await fetch(url, { headers });
+        const result = await response.json();
+
+        const frutas = result.record.frutas;
+
+        const fruta = frutas.find(item => item.codigo == codigo);
+
+        if (fruta) {
+          document.getElementById("frutaImagem").src = fruta.imagem;
+          document.getElementById("frutaNome").textContent = fruta.nome;
+          document.getElementById("frutaCodigo").textContent = fruta.codigo;
+          document.getElementById("frutaSobre").textContent = fruta.sobre;
+          card.style.display = "block";
+        } else {
+          alert("Fruta não encontrada!");
+          card.style.display = "none";
+        }
+
+      } catch (error) {
+        console.error("Erro ao consultar fruta:", error);
+        alert("Ocorreu um erro ao consultar a fruta.");
+        card.style.display = "none";
+      }
+    }
+  </script>
+
+</body>
+</html>
